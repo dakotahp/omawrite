@@ -1744,6 +1744,32 @@ private slots:
         QCOMPARE(editor->property("wrappedSelectionEnd").toInt(), 12);
     }
 
+    void arrowKeysStepOverWholeCharacters() {
+        const QString mainQmlPath = QFINDTESTDATA("../src/Main.qml");
+        QVERIFY(!mainQmlPath.isEmpty());
+
+        Backend backend;
+        QQmlEngine engine;
+        engine.rootContext()->setContextProperty(QStringLiteral("backend"), &backend);
+        QQmlComponent component(&engine, QUrl::fromLocalFile(mainQmlPath));
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+        QScopedPointer<QObject> object(component.create());
+        auto *window = qobject_cast<QQuickWindow *>(object.data());
+        QVERIFY(window);
+        window->show();
+        QVERIFY(QTest::qWaitForWindowExposed(window));
+        QObject *editor = window->findChild<QObject *>(QStringLiteral("sourceEditor"));
+        QVERIFY(editor);
+
+        editor->setProperty("text", QStringLiteral("a😀b"));
+        QMetaObject::invokeMethod(editor, "forceActiveFocus");
+        editor->setProperty("cursorPosition", 1);
+        QTest::keyClick(window, Qt::Key_Right);
+        QCOMPARE(editor->property("cursorPosition").toInt(), 3);
+        QTest::keyClick(window, Qt::Key_Left);
+        QCOMPARE(editor->property("cursorPosition").toInt(), 1);
+    }
+
     void stepsOverWholeCharactersWhenTypingAndSaving() {
         const QString mainQmlPath = QFINDTESTDATA("../src/Main.qml");
         QVERIFY(!mainQmlPath.isEmpty());
